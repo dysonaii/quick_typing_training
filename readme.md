@@ -2,6 +2,8 @@
 
 使用 Python + PySimpleGUI 開發的無蝦米輸入法打字練習工具。
 
+![alt text](image.png)
+
 ## 執行
 ```
 python main.pyw
