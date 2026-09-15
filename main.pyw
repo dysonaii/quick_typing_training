@@ -4,7 +4,7 @@ import random
 import time
 import PySimpleGUI as sg
 from two_key_classification import two_key_classification, CATEGORIES
-from shorthand_roots import SHORTHAND_ROOTS
+from shorthand_roots import SHORTHAND_ROOTS, SHORTHAND_LAYER2
 
 SETTINGS_FILE = 'settings.json'
 
@@ -57,31 +57,26 @@ def compute_shortest(cin):
                 shortest[ch] = ks
     return shortest
 
-def build_su_gen(shortest, letter_start, letter_end, min_len, max_len):
+def build_su_gen(cin, shortest, letter_start, letter_end, min_len, max_len):
     letters = sorted(SHORTHAND_ROOTS.keys())
     si = letters.index(letter_start)
     ei = letters.index(letter_end)
-    codes = []
-    for ltr in letters[si:ei+1]:
-        for root in SHORTHAND_ROOTS[ltr]:
-            code = shortest.get(root, '')
-            if len(code) == 2:
-                codes.append(code)
-    suffixes = set(codes)
+    roots = [r for ltr in letters[si:ei+1] for r in SHORTHAND_ROOTS[ltr]]
+    chars = set()
+    for root in roots:
+        chars.update(SHORTHAND_LAYER2.get(root, '').split())
+    chars &= set(shortest)
     result = []
-    for ch, k in shortest.items():
-        o = ord(ch)
-        if 0x3105 <= o <= 0x3129:
-            continue
-        ln = len(k)
+    for ch in chars:
+        ln = len(shortest[ch])
         if ln < 2:
             continue
         if min_len and ln < min_len:
             continue
         if max_len and ln > max_len:
             continue
-        if k[-2:] in suffixes:
-            result.append((ch, k))
+        result.append((ch, shortest[ch]))
+    result.sort()
     return result
 
 MODES = [
@@ -168,14 +163,14 @@ def main():
          sg.Button('載入字根檔', key='-LOAD_CIN-', font=('Helvetica', 10)),
          sg.Button('離開', key='-EXIT-', font=('Helvetica', 10))],
         [sg.Column([mode_buttons[i:i+4] for i in range(0, len(mode_buttons), 4)])],
-        [sg.Text('字群(2~8 only):', font=('Helvetica', 10)),
+        [sg.Text('字群:', font=('Helvetica', 10)),
          sg.Combo(letter_filter, default_value=init_ls, key='-LETTER_START-', size=(3, 1),
                   enable_events=True, readonly=True, font=('Helvetica', 10)),
          sg.Text('~', font=('Helvetica', 10)),
          sg.Combo(letter_filter, default_value=init_le, key='-LETTER_END-', size=(3, 1),
                   enable_events=True, readonly=True, font=('Helvetica', 10)),
          sg.Push(),
-         sg.Text('速根碼數(8 only):', font=('Helvetica', 10)),
+         sg.Text('速根碼數:', font=('Helvetica', 10)),
          sg.Combo(['2', '3', '多'], default_value=init_cs, key='-CODE_START-', size=(3, 1),
                   enable_events=True, readonly=True, font=('Helvetica', 10)),
          sg.Text('~', font=('Helvetica', 10)),
@@ -224,10 +219,10 @@ def main():
         ls = window['-LETTER_START-'].get()
         le = window['-LETTER_END-'].get()
         if build_type == 'one_key':
-            bank = build_one_key(cin)
+            bank = build_one_key(cin, ls, le)
         elif build_type == 'su_gen':
             s, e = get_code_range()
-            bank = build_su_gen(shortest, ls, le, s, e)
+            bank = build_su_gen(cin, shortest, ls, le, s, e)
         else:
             bank = build_two_key(cin, category, ls, le)
         original_bank = list(bank)
