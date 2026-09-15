@@ -57,7 +57,7 @@ def compute_shortest(cin):
                 shortest[ch] = ks
     return shortest
 
-def build_su_gen(shortest, letter_start, letter_end, min_len, max_len):
+def build_speed_gen(shortest, letter_start, letter_end, min_len, max_len):
     letters = sorted(SHORTHAND_ROOTS.keys())
     si = letters.index(letter_start)
     ei = letters.index(letter_end)
@@ -70,6 +70,9 @@ def build_su_gen(shortest, letter_start, letter_end, min_len, max_len):
     suffixes = set(codes)
     result = []
     for ch, k in shortest.items():
+        o = ord(ch)
+        if 0x3105 <= o <= 0x3129:
+            continue
         ln = len(k)
         if ln < 2:
             continue
@@ -89,7 +92,7 @@ MODES = [
     ('二碼(簡字)', 'two_key', 'simplified'),
     ('二碼(其它)', 'two_key', 'other'),
     ('二碼(未分類)', 'two_key', 'other2'),
-    ('速根', 'su_gen', 'su_gen'),
+    ('速根', 'speed_gen', 'speed_gen'),
 ]
 
 def load_settings():
@@ -165,14 +168,14 @@ def main():
          sg.Button('載入字根檔', key='-LOAD_CIN-', font=('Helvetica', 10)),
          sg.Button('離開', key='-EXIT-', font=('Helvetica', 10))],
         [sg.Column([mode_buttons[i:i+4] for i in range(0, len(mode_buttons), 4)])],
-        [sg.Text('字群(2~8 only):', font=('Helvetica', 10)),
+        [sg.Text('字群:', font=('Helvetica', 10)),
          sg.Combo(letter_filter, default_value=init_ls, key='-LETTER_START-', size=(3, 1),
                   enable_events=True, readonly=True, font=('Helvetica', 10)),
          sg.Text('~', font=('Helvetica', 10)),
          sg.Combo(letter_filter, default_value=init_le, key='-LETTER_END-', size=(3, 1),
                   enable_events=True, readonly=True, font=('Helvetica', 10)),
          sg.Push(),
-         sg.Text('速根碼數(8 only):', font=('Helvetica', 10)),
+         sg.Text('速根碼數:', font=('Helvetica', 10)),
          sg.Combo(['2', '3', '多'], default_value=init_cs, key='-CODE_START-', size=(3, 1),
                   enable_events=True, readonly=True, font=('Helvetica', 10)),
          sg.Text('~', font=('Helvetica', 10)),
@@ -221,10 +224,10 @@ def main():
         ls = window['-LETTER_START-'].get()
         le = window['-LETTER_END-'].get()
         if build_type == 'one_key':
-            bank = build_one_key(cin)
-        elif build_type == 'su_gen':
+            bank = build_one_key(cin, ls, le)
+        elif build_type == 'speed_gen':
             s, e = get_code_range()
-            bank = build_su_gen(shortest, ls, le, s, e)
+            bank = build_speed_gen(shortest, ls, le, s, e)
         else:
             bank = build_two_key(cin, category, ls, le)
         original_bank = list(bank)
